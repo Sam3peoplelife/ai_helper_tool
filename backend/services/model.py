@@ -6,6 +6,8 @@ import pandas as pd
 import numpy as np
 import json
 import sys
+import os
+import tempfile
 
 # Function to create the model
 def create_model(input_dim, output_dim):
@@ -37,9 +39,12 @@ def create_model(input_dim, output_dim):
 def train_model(model, X_train, y_train, epochs=500, batch_size=32):
     model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size)
 
-# Function to save the model
-def save_model(model, filepath):
-    model.save(filepath)
+# Function to save the model to a temporary file
+def save_model_temp(model):
+    temp_dir = tempfile.mkdtemp()
+    temp_file_path = os.path.join(temp_dir, 'model.h5')
+    model.save(temp_file_path)
+    return temp_file_path
 
 # Function to process input data
 def process_data(file_path):
@@ -90,6 +95,9 @@ def main():
     model = create_model(input_dim=input_data.shape[1], output_dim=output_data.shape[1])
 
     train_model(model, input_data, output_data)
+
+    model_file_path = save_model_temp(model)
+    print(f"Model saved to {model_file_path}")
 
 if __name__ == "__main__":
     main()

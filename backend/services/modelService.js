@@ -1,5 +1,34 @@
 const { spawn } = require('child_process');
 const path = require('path');
+const fs = require('fs');
+const AWS = require('aws-sdk');
+require('dotenv').config();
+
+const s3 = new AWS.S3({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION
+});
+
+const uploadToS3 = (filePath, bucketName, key) => {
+  return new Promise((resolve, reject) => {
+    const fileStream = fs.createReadStream(filePath);
+
+    const params = {
+      Bucket: bucketName,
+      Key: key,
+      Body: fileStream
+    };
+
+    s3.upload(params, (err, data) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(data.Location);
+      }
+    });
+  });
+};
 
 const ModelService = {
   trainModel: (fileName) => {
@@ -29,10 +58,18 @@ const ModelService = {
       });
 
       // Python script execution completed
-      pythonProcess.on('close', (code) => {
+      pythonProcess.on('close', async (code) => {
         if (code === 0) {
-          // Model training succeeded
-          resolve(stdoutData.trim() || 'Model training completed successfully.');
+          // Extract file path from stdout
+          const modelFilePath = stdoutData.split('\n').find(line => line.startsWith('Model saved to')).split(' ').pop().trim();
+          
+          try {
+            const s3Url = await uploadToS3(modelFilePath, process.env.AWS_BUCKET_NAME, path.basename(modelFilePath));
+            fs.unlinkSync(modelFilePath);  // Clean up the local temp file
+            resolve(`Model uploaded to S3: ${s3Url}`);
+          } catch (error) {
+            reject(`Model upload failed: ${error.message}`);
+          }
         } else {
           // Model training failed
           const errorMessage = stderrData.trim() || `Model training failed with code ${code}.`;
@@ -44,4 +81,3 @@ const ModelService = {
 };
 
 module.exports = ModelService;
-
