@@ -8,7 +8,6 @@ router.post('/register', userController.register);
 router.post('/login', userController.login);
 
 router.post('/train-model', modelController.trainModel); // Route for model training
-router.post('/predict-model', modelController.predictSales); // Route for model training
-
+router.post('/predict-model', modelController.predict); // Route for making predictions
 
 module.exports = router;

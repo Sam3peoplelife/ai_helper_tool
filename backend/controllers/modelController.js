@@ -18,16 +18,16 @@ const ModelController = {
     }
   },
 
-  predictSales: async (req, res) => {
-    const { modelFileName, jsonFileName } = req.body; // Assuming the file names are sent in the request body
+  predict: async (req, res) => {
+    const { fileName } = req.body; // Assuming the file name is sent in the request body
 
-    if (!modelFileName || !jsonFileName) {
-      return res.status(400).json({ message: 'Model file name and JSON file name are required.' });
+    if (!fileName) {
+      return res.status(400).json({ message: 'File name is required.' });
     }
 
     try {
-      const result = await ModelService.predictSales(modelFileName, jsonFileName);
-      res.status(200).json({ message: 'Prediction successful.', predictions: result });
+      const predictions = await ModelService.predict(fileName);
+      res.status(200).json({ message: 'Prediction successful.', predictions });
     } catch (error) {
       console.error('Error while making predictions:', error);
       res.status(500).json({ message: 'Prediction failed.', error: error.toString() });

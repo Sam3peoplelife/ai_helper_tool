@@ -25,6 +25,7 @@ const downloadFromS3 = (bucketName, key, downloadPath) => {
   });
 };
 
+
 const uploadToS3 = (filePath, bucketName, key) => {
   return new Promise((resolve, reject) => {
     const fileStream = fs.createReadStream(filePath);
@@ -94,48 +95,57 @@ const ModelService = {
     });
   },
 
-  predictSales: (modelFileName, jsonFileName) => {
-    return new Promise(async (resolve, reject) => {
-      const modelFilePath = path.join(__dirname, '..', 'tempModels');
-      const jsonFilePath = path.join(__dirname, '..', 'input_data', jsonFileName);
-      
-      try {
-        await downloadFromS3(process.env.AWS_BUCKET_NAME, modelFileName, modelFilePath);
-      } catch (error) {
-        return reject(`Model download failed: ${error.message}`);
-      }
+  predict: (fileName) => {
+    return new Promise((resolve, reject) => {
+      const jsonFilePath = path.join(__dirname, '..', 'predict_data', fileName);
+      const modelFilePath = path.join(__dirname, '..', 'modelsTemp', 'model.h5');
 
-      const pythonProcess = spawn('python3', [path.join(__dirname, 'predict.py'), modelFilePath, jsonFilePath]);
+      // Download the model from S3
+      downloadFromS3(process.env.AWS_BUCKET_NAME, 'model.h5', modelFilePath)
+        .then(() => {
+          // Command to execute Python script for prediction
+          const pythonProcess = spawn('python3', [path.join(__dirname, 'predict.py'), modelFilePath, jsonFilePath]);
 
-      let stdoutData = '';
-      let stderrData = '';
+          let stdoutData = '';
+          let stderrData = '';
 
-      pythonProcess.stdout.on('data', (data) => {
-        stdoutData += data.toString().trim();  // Ensure newline characters are handled correctly
-      });
+          // Collecting stdout from Python script
+          pythonProcess.stdout.on('data', (data) => {
+            stdoutData += data.toString();
+          });
 
-      pythonProcess.stderr.on('data', (data) => {
-        stderrData += data.toString();
-        console.error(`Python stderr: ${data}`);
-      });
+          // Collecting stderr from Python script
+          pythonProcess.stderr.on('data', (data) => {
+            stderrData += data.toString() + "\n";
+            console.error(`Python stderr: ${data}`);
+          });
 
-      pythonProcess.on('close', (code) => {
-        if (code === 0) {
-          const resultFilePath = path.join(__dirname, '..', 'predictions', 'predictions.json');
+          // Python script execution completed
+          pythonProcess.on('close', (code) => {
+            if (code === 0) {
+              // Extract file path from stdout
+              const predictionsFilePath = stdoutData.split('\n').find(line => line.startsWith('Predictions saved to')).split(' ').pop().trim();
 
-          fs.readFile(resultFilePath, 'utf8', (err, data) => {
-            if (err) {
-              reject(`Failed to read predictions file: ${err.message}`);
+              // Read the predictions file and send the response
+              fs.readFile(predictionsFilePath, (err, data) => {
+                if (err) {
+                  reject(`Error reading predictions file: ${err.message}`);
+                } else {
+                  const predictions = JSON.parse(data);
+                  fs.unlinkSync(predictionsFilePath); // Clean up the predictions file
+                  resolve(predictions);
+                }
+              });
+
+              fs.unlinkSync(modelFilePath);
             } else {
-              fs.unlinkSync(resultFilePath);  // Clean up the predictions file
-              resolve(JSON.parse(data));
+              // Prediction failed
+              const errorMessage = stderrData.trim() || `Prediction failed with code ${code}.`;
+              reject(errorMessage);
             }
           });
-        } else {
-          const errorMessage = stderrData.trim() || `Prediction failed with code ${code}.`;
-          reject(errorMessage);
-        }
-      });
+        })
+        .catch(err => reject(`Model download failed: ${err.message}`));
     });
   }
 };
