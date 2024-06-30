@@ -24,7 +24,7 @@ def create_model(input_dim, output_dim):
     x = Dense(32, activation='relu')(x)
     
     # Output layer
-    outputs = Dense(output_dim, activation='linear')(x)
+    outputs = Dense(1, activation='linear')(x)
     
     # Define model
     model = Model(inputs=inputs, outputs=outputs)

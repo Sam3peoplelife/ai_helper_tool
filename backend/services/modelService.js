@@ -95,7 +95,7 @@ const ModelService = {
     });
   },
 
-  predict: (fileName) => {
+  predictModel: (fileName) => {
     return new Promise((resolve, reject) => {
       const jsonFilePath = path.join(__dirname, '..', 'predict_data', fileName);
       const modelFilePath = path.join(__dirname, '..', 'modelsTemp', 'model.h5');
@@ -147,6 +147,55 @@ const ModelService = {
         })
         .catch(err => reject(`Model download failed: ${err.message}`));
     });
+  },
+
+  updateModel: (fileName) => {
+    return new Promise((resolve, reject) => {
+      const jsonFilePath = path.join(__dirname, '..', 'update_data', fileName);
+      const modelFilePath = path.join(__dirname, '..', 'modelsTemp', 'model.h5');
+
+      // Download the model from S3
+      downloadFromS3(process.env.AWS_BUCKET_NAME, 'model.h5', modelFilePath)
+        .then(() => {
+          // Command to execute Python script for prediction
+          const pythonProcess = spawn('python3', [path.join(__dirname, 'update_model.py'), modelFilePath, jsonFilePath]);
+
+          let stdoutData = '';
+          let stderrData = '';
+
+          // Collecting stdout from Python script
+          pythonProcess.stdout.on('data', (data) => {
+            stdoutData += data.toString();
+          });
+
+          // Collecting stderr from Python script
+          pythonProcess.stderr.on('data', (data) => {
+            stderrData += data.toString() + "\n";
+            console.error(`Python stderr: ${data}`);
+          });
+          
+          // Python script execution completed
+          pythonProcess.on('close', async (code) => {
+            if (code === 0) {
+              // Extract file path from stdout
+              const updatedModelFilePath = stdoutData.split('\n').find(line => line.startsWith('Updated model saved to')).split(' ').pop().trim();
+              
+              try {
+                const s3Url = await uploadToS3(updatedModelFilePath, process.env.AWS_BUCKET_NAME, path.basename(updatedModelFilePath));
+                fs.unlinkSync(updatedModelFilePath);  // Clean up the local temp file
+                resolve(`Updated model uploaded to S3: ${s3Url}`);
+              } catch (error) {
+                reject(`Updated model upload failed: ${error.message}`);
+              }
+            fs.unlinkSync(modelFilePath);
+            } else {
+              // Model training failed
+              const errorMessage = stderrData.trim() || `Model training failed with code ${code}.`;
+              reject(errorMessage);
+            }
+          });
+        })
+    })
   }
 };
 
