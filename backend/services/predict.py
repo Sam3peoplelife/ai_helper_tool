@@ -1,13 +1,11 @@
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 import pandas as pd
-import numpy as np
-import json
 import sys
 import os
 import tempfile
 
-from model import separate_data
+from json_encoding import separate_data
 
 # Define custom objects
 custom_objects = {'mse': tf.keras.losses.MeanSquaredError}
