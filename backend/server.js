@@ -21,6 +21,7 @@ mongoose.connect(dbURI).then(() => {
 
 // middleware
 app.use(bodyParser.json({ limit: '5mb' }));
+app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
 // routes

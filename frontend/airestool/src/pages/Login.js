@@ -10,20 +10,21 @@ function Login() {
     const navigate = useNavigate()
 
     const handleLogin = async (event) => {
-        event.preventDefault();
-        try{
-            const response = await axios.post("http://localhost:3001/login", {username, password})
-            const token = response.data.token
-            alert('Login successfull')
-            setUsername('')
-            setPassword('')
-            navigate('/account')
-            window.location.reload()
-            localStorage.setItem('token', token)
-        } catch (error) {
-            console.log("Login error")
-        }
-    }
+      event.preventDefault();
+      try {
+          const response = await axios.post("http://localhost:3001/login", {username, password});
+          const token = response.data.token;
+          alert('Login successful');
+          setUsername('');
+          setPassword('');
+          localStorage.setItem('token', token);
+          localStorage.setItem('username', username); // Store username in localStorage
+          navigate('/account');
+          window.location.reload(); // Optional: to reload the page and trigger useEffect in Account
+      } catch (error) {
+          console.log("Login error");
+      }
+  };
 
   return (
     <div className='w-full h-screen flex'>

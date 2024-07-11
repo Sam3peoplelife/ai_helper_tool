@@ -1,14 +1,25 @@
 const express = require('express');
-const userController = require('../controllers/userController');
-const modelController = require('../controllers/modelController'); // Import model controller
-
 const router = express.Router();
+
+const userController = require('../controllers/userController');
+const modelController = require('../controllers/modelController')
+
+const multer = require('multer');
+const fileController = require('../controllers/fileController');
+
+const upload = multer({ dest: 'uploads/' });
 
 router.post('/register', userController.register);
 router.post('/login', userController.login);
 
-router.post('/train-model', modelController.trainModel); // Route for model training
-router.post('/predict-model', modelController.predictModel); // Route for making predictions
-router.post('/update-model', modelController.updateModel); //Route for updating model
+router.post('/train', modelController.trainModel);
+router.post('/predict', modelController.predictModel);
+router.post('/update', modelController.updateModel);
+
+router.post('/uploadFile', upload.single('file'), fileController.uploadFile);
+router.post('/listUserFiles', fileController.listUserFiles);
+router.post('/downloadFile', fileController.downloadFile);
+
 
 module.exports = router;
+

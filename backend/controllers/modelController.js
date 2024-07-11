@@ -2,14 +2,14 @@ const ModelService = require('../services/modelService');
 
 const ModelController = {
   trainModel: async (req, res) => {
-    const { fileName } = req.body; // Assuming the file name is sent in the request body
+    const { username, fileName } = req.body; 
 
     if (!fileName) {
       return res.status(400).json({ message: 'File name is required.' });
     }
 
     try {
-      const result = await ModelService.trainModel(fileName);
+      const result = await ModelService.trainModel(username, fileName);
       console.log(result)
       res.status(200).json({ message: 'Model training successful.', s3Url: result });
     } catch (error) {
@@ -19,14 +19,14 @@ const ModelController = {
   },
 
   predictModel: async (req, res) => {
-    const { fileName } = req.body; // Assuming the file name is sent in the request body
+    const { username, fileName } = req.body; 
 
     if (!fileName) {
       return res.status(400).json({ message: 'File name is required.' });
     }
 
     try {
-      const predictions = await ModelService.predictModel(fileName);
+      const predictions = await ModelService.predictModel(username, fileName);
       res.status(200).json({ message: 'Prediction successful.', predictions });
     } catch (error) {
       console.error('Error while making predictions:', error);
@@ -35,14 +35,14 @@ const ModelController = {
   },
 
   updateModel: async (req, res) => {
-    const { fileName } = req.body; // Assuming the file name is sent in the request body
+    const { username, fileName } = req.body; // Assuming the file name is sent in the request body
 
     if (!fileName) {
       return res.status(400).json({ message: 'File name is required.' });
     }
 
     try {
-      const predictions = await ModelService.updateModel(fileName);
+      const predictions = await ModelService.updateModel(username, fileName);
       res.status(200).json({ message: 'Updating successful.', predictions });
     } catch (error) {
       console.error('Error while making update:', error);
