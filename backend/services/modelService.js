@@ -107,10 +107,10 @@ const ModelService = {
 
   updateModel: async (username, fileName) => {
     try {
-      const downloadPath = path.join(__dirname, '..', 'update_data', fileName);
-      const modelFilePath = path.join(__dirname, '..', 'modelsTemp', `${username}_model.h5`);
+      const downloadPath = path.join(__dirname, '..', username, 'update_data', 'filename');
+      const modelFilePath = path.join(__dirname, '..', username, 'model', `${username}_model.h5`);
 
-      await fileController.downloadFile({ body: { username, type: 'update', filename: fileName } });
+      await fileController.downloadFile({ body: { username, type: 'update_data', filename: fileName } });
       await fileController.downloadFile({ body: { username, type: 'model', filename: `${username}_model.h5` } });
 
       const pythonProcess = spawn('python3', [path.join(__dirname, 'update_model.py'), modelFilePath, downloadPath]);
@@ -136,9 +136,9 @@ const ModelService = {
             const updatedModelFilePath = stdoutData.split('\n').find(line => line.startsWith('Updated model saved to')).split(' ').pop().trim();
 
             try {
-              const s3Url = await fileController.uploadToS3(updatedModelFilePath, process.env.AWS_BUCKET_NAME, `${username}/model/${path.basename(updatedModelFilePath)}`);
+              await fileController.uploadToS3(updatedModelFilePath, process.env.AWS_BUCKET_NAME, `${username}/model/${username}_model.h5`);
               fs.unlinkSync(updatedModelFilePath);
-              resolve(`Updated model uploaded to S3: ${s3Url}`);
+              resolve(`Updated model uploaded to S3`);
             } catch (error) {
               reject(`Updated model upload failed: ${error.message}`);
             }
