@@ -106,7 +106,12 @@ const downloadFile = async (req, res) => {
   try {
     const { username, type, filename } = req.body;
     const key = `${username}/${type}/${filename}`;
-    const localFilePath = path.join(__dirname, `../${username}/${type}/filename`);
+    if (type === 'model'){
+      localFilePath = path.join(__dirname, `../${username}/${type}/${filename}`);
+    }
+    else{
+      localFilePath = path.join(__dirname, `../${username}/${type}/filename`);
+    }
 
     await downloadFromS3(process.env.AWS_BUCKET_NAME, key, localFilePath)
 

@@ -31,7 +31,7 @@ def create_model(input_dim, output_dim):
     return model
 
 # Function to train the model
-def train_model(model, X_train, y_train, epochs=5, batch_size=32):
+def train_model(model, X_train, y_train, epochs=500, batch_size=32):
     model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size)
 
 def main():
