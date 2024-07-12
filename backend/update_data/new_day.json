@@ -1,17 +1,19 @@
-{
-    "date": "2023-12-31",
-    "day_of_week": "Sunday",
-    "weather": "cloudy",
-    "sales": {
-        "Product 1": 64,
-        "Product 2": 135,
-        "Product 3": 12,
-        "Product 4": 29,
-        "Product 5": 24,
-        "Product 6": 7,
-        "Product 7": 22,
-        "Product 8": 150,
-        "Product 9": 26,
-        "Product 10": 13
+[
+    {
+        "date": "2023-12-31",
+        "day_of_week": "Sunday",
+        "weather": "cloudy",
+        "sales": {
+            "Product 1": 64,
+            "Product 2": 135,
+            "Product 3": 12,
+            "Product 4": 29,
+            "Product 5": 24,
+            "Product 6": 7,
+            "Product 7": 22,
+            "Product 8": 150,
+            "Product 9": 26,
+            "Product 10": 13
+        }
     }
-}
+]

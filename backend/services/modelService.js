@@ -60,6 +60,7 @@ const ModelService = {
     try {
       const downloadPath = path.join(__dirname, '..', username, 'predict_data', 'filename');
       const modelFilePath = path.join(__dirname, '..', username, 'model', `${username}_model.h5`);
+      const pychache = path.join(__dirname, '__pycache__')
 
       await fileController.downloadFile({ body: { username, type: 'predict_data', filename: fileName } });
       await fileController.downloadFile({ body: { username, type: 'model', filename: `${username}_model.h5` } });
@@ -85,7 +86,7 @@ const ModelService = {
 
           if (code === 0) {
             const predictionsFilePath = stdoutData.split('\n').find(line => line.startsWith('Predictions saved to')).split(' ').pop().trim();
-
+            
             fs.readFile(predictionsFilePath, (err, data) => {
               if (err) {
                 reject(`Error reading predictions file: ${err.message}`);

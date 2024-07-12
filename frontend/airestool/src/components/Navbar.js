@@ -17,6 +17,7 @@ function Navbar() {
             {isUserSigned?(
                 <>
                     <Link to="/account"><h1>Account</h1></Link>
+                    <Link to="/predictorupdate"><h1>Model</h1></Link>
                     <li><button onClick={handleSignOut}>Sign Out</button></li>
                 </>
             ) : (

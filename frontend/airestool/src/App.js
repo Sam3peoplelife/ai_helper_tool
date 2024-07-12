@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import SingUp from './pages/SingUp';
 import Account from './pages/Account';
+import PredictUpdateModel from './pages/PredictUpdateModel'
 
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
         <Route path="/login" element={ <Login/> }/>
         <Route path="/signup" element={ <SingUp/> }/>
         {isUserSigned && <Route path="/account" element={ <Account/> }/>}
+        {isUserSigned && <Route path="/predictorupdate" element={ <PredictUpdateModel/> }/>}
       </Routes>
     </div>
   );
