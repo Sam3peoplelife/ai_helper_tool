@@ -1,241 +1,252 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
-import { ThreeDots } from 'react-loader-spinner'; // Assuming this component is imported
 
 function PredictUpdateModel() {
-  const [loadingPredict, setLoadingPredict] = useState(false);
-  const [loadingUpdate, setLoadingUpdate] = useState(false);
-  const [predictionResult, setPredictionResult] = useState('');
-  const [updateMessage, setUpdateMessage] = useState('');
-  const [products, setProducts] = useState([]);
-  const [numberOfProducts, setNumberOfProducts] = useState(1); // State for number of products
-  const [dayOfWeekOptions, setDayOfWeekOptions] = useState([]);
-  const [weatherOptions, setWeatherOptions] = useState([]);
-  const username = localStorage.getItem('username');
+  // State for the first card
+  const [date1, setDate1] = useState('');
+  const [dayOfWeek1, setDayOfWeek1] = useState('');
+  const [weather1, setWeather1] = useState('');
+  const [numProducts1, setNumProducts1] = useState(0);
+  const [uploadStatus1, setUploadStatus1] = useState('');
+  const [uploadSuccess1, setUploadSuccess1] = useState(null);
 
-  useEffect(() => {
-    // Fetch options for day of week and weather
-    fetchDayOfWeekOptions();
-    fetchWeatherOptions();
-  }, []);
+  // State for the second card
+  const [date2, setDate2] = useState('');
+  const [dayOfWeek2, setDayOfWeek2] = useState('');
+  const [weather2, setWeather2] = useState('');
+  const [numProducts2, setNumProducts2] = useState(0);
+  const [productSales2, setProductSales2] = useState([]);
+  const [uploadStatus2, setUploadStatus2] = useState('');
+  const [uploadSuccess2, setUploadSuccess2] = useState(null);
 
-  const fetchDayOfWeekOptions = () => {
-    // Simulating fetching options from a backend or static list
-    const options = [
-      { value: 'Sunday', label: 'Sunday' },
-      { value: 'Monday', label: 'Monday' },
-      { value: 'Tuesday', label: 'Tuesday' },
-      { value: 'Wednesday', label: 'Wednesday' },
-      { value: 'Thursday', label: 'Thursday' },
-      { value: 'Friday', label: 'Friday' },
-      { value: 'Saturday', label: 'Saturday' },
-    ];
-    setDayOfWeekOptions(options);
+  const username = localStorage.getItem('username'); // Ensure this is set
+
+  const handleNumProductsChange2 = (e) => {
+    const num = parseInt(e.target.value) || 0;
+    setNumProducts2(num);
+    setProductSales2(Array(num).fill(0));
   };
 
-  const fetchWeatherOptions = () => {
-    // Simulating fetching options from a backend or static list
-    const options = ['cloudy', 'rainy', 'sunny', 'snowy'].map((weather) => ({
-      value: weather.toLowerCase(),
-      label: weather,
-    }));
-    setWeatherOptions(options);
+  const handleProductSaleChange2 = (index, value) => {
+    const sales = [...productSales2];
+    sales[index] = parseInt(value) || 0;
+    setProductSales2(sales);
   };
 
-  const handlePredict = async () => {
-    setLoadingPredict(true);
+  const handleUpload = async (salesData, type, setUploadSuccess, setUploadStatus) => {
+    const jsonFile = new Blob([JSON.stringify(salesData)], { type: 'application/json' });
+    const formData = new FormData();
+    formData.append('file', jsonFile, 'sales_data.json');
+    formData.append('username', username);
+    formData.append('type', type);
 
     try {
-      const predictionData = {
-        date: new Date().toISOString().split('T')[0],
-        dayOfWeek: '', // State for dropdown selection
-        weather: '', // State for dropdown selection
-        sales: {},
-      };
-
-      for (let i = 1; i <= numberOfProducts; i++) {
-        predictionData.sales[`Product ${i}`] = 0; // Initialize with 0 sales
-      }
-
-      const response = await axios.post('http://localhost:3001/predict', {
-        username,
-        ...predictionData,
+      const response = await axios.post('http://localhost:3001/uploadFile', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
-      setPredictionResult(response.data.predictions);
+
+      if (response.status === 200) {
+        const fileName = 'sales_data.json'; // Assuming this is the file name after upload
+        if (type === 'predict_data') {
+          await axios.post('http://localhost:3001/predict', { username, fileName });
+          setUploadStatus('File uploaded and prediction successful.');
+        } else if (type === 'update_data') {
+          await axios.post('http://localhost:3001/update', { username, fileName });
+          setUploadStatus('File uploaded and update successful.');
+        }
+        setUploadSuccess(true);
+      } else {
+        setUploadSuccess(false);
+        setUploadStatus('File upload failed');
+      }
     } catch (error) {
-      console.error('Prediction error:', error);
-    } finally {
-      setLoadingPredict(false);
+      setUploadSuccess(false);
+      setUploadStatus('File upload failed');
+      console.error('Upload error:', error);
     }
   };
 
-  const handleUpdate = async () => {
-    setLoadingUpdate(true);
-
-    try {
-      const updateData = {
-        date: new Date().toISOString().split('T')[0],
-        dayOfWeek: '',
-        weather: '',
-        sales: {},
-      };
-
-      for (let i = 0; i < products.length; i++) {
-        updateData.sales[`Product ${i + 1}`] = products[i];
-      }
-
-      const response = await axios.post('http://localhost:3001/update', {
-        username,
-        ...updateData,
-      });
-      setUpdateMessage('Model updated successfully.');
-    } catch (error) {
-      console.error('Update error:', error);
-      setUpdateMessage('Failed to update model.');
-    } finally {
-      setLoadingUpdate(false);
+  const handleUploadWithDefaultValues = () => {
+    if (!date1 || !dayOfWeek1 || !weather1 || numProducts1 <= 0) {
+      setUploadSuccess1(false);
+      setUploadStatus1('Please fill in all fields and ensure number of products is greater than 0.');
+      return;
     }
+
+    const sales = Array.from({ length: numProducts1 }).reduce((obj, _, index) => {
+      obj[`Product ${index + 1}`] = 0;
+      return obj;
+    }, {});
+
+    const salesData = [{
+      date: date1,
+      day_of_week: dayOfWeek1,
+      weather: weather1,
+      sales
+    }];
+
+    handleUpload(salesData, 'predict_data', setUploadSuccess1, setUploadStatus1);
   };
 
-  const handleProductChange = (index, value) => {
-    const updatedProducts = [...products];
-    updatedProducts[index] = value;
-    setProducts(updatedProducts);
-  };
+  const handleUploadWithCustomValues = () => {
+    if (!date2 || !dayOfWeek2 || !weather2 || numProducts2 <= 0) {
+      setUploadSuccess2(false);
+      setUploadStatus2('Please fill in all fields and ensure number of products is greater than 0.');
+      return;
+    }
 
-  const handleAddProduct = () => {
-    setProducts([...products, '']);
-  };
+    const sales = productSales2.reduce((obj, value, index) => {
+      obj[`Product ${index + 1}`] = value;
+      return obj;
+    }, {});
 
-  const handleRemoveProduct = (index) => {
-    const updatedProducts = [...products];
-    updatedProducts.splice(index, 1);
-    setProducts(updatedProducts);
-  };
+    const salesData = [{
+      date: date2,
+      day_of_week: dayOfWeek2,
+      weather: weather2,
+      sales
+    }];
 
-  const handleNumberOfProductsChange = (event) => {
-    const count = parseInt(event.target.value);
-    setNumberOfProducts(count > 0 ? count : 1); // Ensure at least 1 product
-    setProducts(Array.from({ length: count }, () => '')); // Reset products array
+    handleUpload(salesData, 'update_data', setUploadSuccess2, setUploadStatus2);
   };
 
   return (
-    <div className="flex justify-center mt-8">
-      {/* Predict Card */}
-      <div className="m-4 p-4 border rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold mb-2">Predictions</h2>
-        <div className="mb-4">
-          {/* Date picker */}
-          <input type="date" className="p-2 border rounded-lg mr-2" />
-          {/* Day of week dropdown */}
-          <select
-            value={dayOfWeekOptions.value}
-            onChange={dayOfWeekOptions.onChange}
-            className="p-2 border rounded-lg mr-2"
-          >
-            <option value="">Select Day of Week</option>
-            {dayOfWeekOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          {/* Weather dropdown */}
-          <select
-            value={weatherOptions.value}
-            onChange={weatherOptions.onChange}
-            className="p-2 border rounded-lg mr-2"
-          >
-            <option value="">Select Weather</option>
-            {weatherOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          {/* Number of products input */}
-          <input
-            type="number"
-            min="1"
-            value={numberOfProducts}
-            onChange={handleNumberOfProductsChange}
-            className="p-2 border rounded-lg mr-2"
-          />
-        </div>
-        <button
-          onClick={handlePredict}
-          className="w-full p-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-700"
+    <div className="w-full h-screen flex flex-row items-center justify-center bg-gray-100 space-x-6">
+      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-lg">
+        <h2 className="text-2xl mb-4">Upload Sales Data with Default Values</h2>
+        <label className="block mb-2 text-lg">Date</label>
+        <input
+          type="date"
+          value={date1}
+          onChange={(e) => setDate1(e.target.value)}
+          className="mb-4 p-2 border rounded-lg w-full"
+        />
+
+        <label className="block mb-2 text-lg">Day of Week</label>
+        <select
+          value={dayOfWeek1}
+          onChange={(e) => setDayOfWeek1(e.target.value)}
+          className="mb-4 p-2 border rounded-lg w-full"
         >
-          Predict
+          <option value="">Select a day</option>
+          {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day) => (
+            <option key={day} value={day}>
+              {day}
+            </option>
+          ))}
+        </select>
+
+        <label className="block mb-2 text-lg">Weather</label>
+        <select
+          value={weather1}
+          onChange={(e) => setWeather1(e.target.value)}
+          className="mb-4 p-2 border rounded-lg w-full"
+        >
+          <option value="">Select weather</option>
+          {['cloudy', 'sunny', 'rainy', 'snowy'].map((condition) => (
+            <option key={condition} value={condition}>
+              {condition}
+            </option>
+          ))}
+        </select>
+
+        <label className="block mb-2 text-lg">Number of Products</label>
+        <input
+          type="number"
+          value={numProducts1}
+          onChange={(e) => setNumProducts1(parseInt(e.target.value) || 0)}
+          className="mb-4 p-2 border rounded-lg w-full"
+          min="1"
+        />
+
+        <button
+          onClick={handleUploadWithDefaultValues}
+          className="w-full p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-700 mt-4"
+        >
+          Upload File
         </button>
-        {loadingPredict && (
-          <div className="flex items-center justify-center mt-4">
-            <ThreeDots type="ThreeDots" color="#00BFFF" height={50} width={50} />
-            <p className="ml-2 text-blue-500">Predicting, please wait...</p>
-          </div>
-        )}
-        {predictionResult && (
-          <div className="mt-4">
-            <p className="text-lg mb-2">Prediction Results:</p>
-            <pre>{JSON.stringify(predictionResult, null, 2)}</pre>
-          </div>
+
+        {uploadStatus1 && (
+          <p className={`mt-4 text-lg ${uploadSuccess1 ? 'text-green-500' : 'text-red-500'}`}>
+            {uploadStatus1}
+          </p>
         )}
       </div>
 
-      {/* Update Card */}
-      <div className="m-4 p-4 border rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold mb-2">Update Model</h2>
-        <div className="mb-4">
-          {/* Date picker */}
-          <input type="date" className="p-2 border rounded-lg mr-2" />
-          {/* Day of week dropdown */}
-          <select className="p-2 border rounded-lg mr-2">
-            <option value="">Select Day of Week</option>
-            {/* Populate options dynamically */}
-          </select>
-          {/* Weather dropdown */}
-          <select className="p-2 border rounded-lg mr-2">
-            <option value="">Select Weather</option>
-            {/* Populate options dynamically */}
-          </select>
-        </div>
-        {products.map((product, index) => (
-          <div key={index} className="flex items-center mb-2">
+      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-lg">
+        <h2 className="text-2xl mb-4">Upload Sales Data with Custom Values</h2>
+        <label className="block mb-2 text-lg">Date</label>
+        <input
+          type="date"
+          value={date2}
+          onChange={(e) => setDate2(e.target.value)}
+          className="mb-4 p-2 border rounded-lg w-full"
+        />
+
+        <label className="block mb-2 text-lg">Day of Week</label>
+        <select
+          value={dayOfWeek2}
+          onChange={(e) => setDayOfWeek2(e.target.value)}
+          className="mb-4 p-2 border rounded-lg w-full"
+        >
+          <option value="">Select a day</option>
+          {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day) => (
+            <option key={day} value={day}>
+              {day}
+            </option>
+          ))}
+        </select>
+
+        <label className="block mb-2 text-lg">Weather</label>
+        <select
+          value={weather2}
+          onChange={(e) => setWeather2(e.target.value)}
+          className="mb-4 p-2 border rounded-lg w-full"
+        >
+          <option value="">Select weather</option>
+          {['cloudy', 'sunny', 'rainy', 'snowy'].map((condition) => (
+            <option key={condition} value={condition}>
+              {condition}
+            </option>
+          ))}
+        </select>
+
+        <label className="block mb-2 text-lg">Number of Products</label>
+        <input
+          type="number"
+          value={numProducts2}
+          onChange={handleNumProductsChange2}
+          className="mb-4 p-2 border rounded-lg w-full"
+          min="1"
+        />
+
+        {Array.from({ length: numProducts2 }).map((_, index) => (
+          <div key={index} className="mb-2">
+            <label className="block text-lg">{`Product ${index + 1}`}</label>
             <input
-              type="text"
-              value={product}
-              onChange={(e) => handleProductChange(index, e.target.value)}
-              placeholder={`Product ${index + 1}`}
-              className="p-2 border rounded-lg mr-2"
+              type="number"
+              value={productSales2[index] || 0}
+              onChange={(e) => handleProductSaleChange2(index, e.target.value)}
+              className="p-2 border rounded-lg w-full"
+              min="0"
             />
-            <button
-              onClick={() => handleRemoveProduct(index)}
-              className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-700"
-            >
-              Remove
-            </button>
           </div>
         ))}
+
         <button
-          onClick={handleAddProduct}
-          className="w-full p-2 bg-green-500 text-white rounded-lg hover:bg-green-700"
+          onClick={handleUploadWithCustomValues}
+          className="w-full p-2 bg-green-500 text-white rounded-lg hover:bg-green-700 mt-4"
         >
-          Add Product
+          Upload File
         </button>
-        <button
-          onClick={handleUpdate}
-          className="w-full mt-2 p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-700"
-          disabled={products.length === 0}
-        >
-          Update Model
-        </button>
-        {loadingUpdate && (
-          <div className="flex items-center justify-center mt-4">
-            <ThreeDots type="ThreeDots" color="#00BFFF" height={50} width={50} />
-            <p className="ml-2 text-blue-500">Updating model, please wait...</p>
-          </div>
+
+        {uploadStatus2 && (
+          <p className={`mt-4 text-lg ${uploadSuccess2 ? 'text-green-500' : 'text-red-500'}`}>
+            {uploadStatus2}
+          </p>
         )}
-        {updateMessage && <p className="mt-2 text-red-500">{updateMessage}</p>}
       </div>
     </div>
   );
