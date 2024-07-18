@@ -1,0 +1,4 @@
+scikit-learn
+pandas
+jsonlib-python3
+tensorflow
