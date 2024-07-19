@@ -8,8 +8,6 @@ services:
       - '3001:3001'
     depends_on:
       - mongo
-    volumes:
-      - ./backend:/app
     environment:
       - NODE_ENV=production
 

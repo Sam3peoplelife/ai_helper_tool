@@ -8,7 +8,7 @@ WORKDIR /app
 COPY airestool/package.json airestool/package-lock.json* ./
 
 # Install npm dependencies
-RUN npm install -g npm@10.8.2
+RUN npm install -g npm@10.2.4
 
 # Copy the entire frontend application to /app
 COPY airestool .
