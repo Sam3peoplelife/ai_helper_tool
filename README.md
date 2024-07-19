@@ -16,5 +16,7 @@
 
 ### P.S.
 ```
-First version of deployment will be provided whitout k8 and tf but as soon as I can I will provide more specific deployment version of the website. Also new features as managment system and scheduling will be available as soon as possible
+First version of deployment will be provided whitout k8 and tf but as soon as
+I can I will provide more specific deployment version of the website.
+Also new features as managment system and scheduling will be available as soon as possible
 ```
